@@ -1,0 +1,30 @@
+{
+  "name": "@ga-ut/gh-db",
+  "version": "0.0.1",
+  "description": "A Simple Data Management Tool Based on GitHub Issues",
+  "private": "false",
+  "homepage": "https://github.com/ga-ut/gh-db",
+  "files": [
+    "dist/",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ga-ut/gh-db,git"
+  },
+  "bugs": {
+    "url": "https://github.com/ga-ut/gh-db/issues"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "commonjs",
+  "author": "ga-ut",
+  "scripts": {
+    "build": "bun build.js && tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "rolldown": "^1.0.0-beta.3",
+    "typescript": "^5.7.3"
+  }
+}
