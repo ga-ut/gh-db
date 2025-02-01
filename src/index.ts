@@ -25,11 +25,19 @@ export class GHDB {
 
     if (token !== null) {
       this.headers = new Headers({
-        Accept: "applicatoin/vnd.github+json",
+        Accept: "application/vnd.github+json",
         Authorization: `Bearer ${token}`,
         "X-Github-Api-Version": "2022-11-28",
       });
     }
+  }
+
+  private async fetcher(url: string, options: RequestInit) {
+    const response = await fetch(url, options);
+    if (response.ok === false) {
+      throw new Error(`Request failed with ${response.status}`);
+    }
+    return response;
   }
 
   async create<T extends Data>(params: {
@@ -39,7 +47,7 @@ export class GHDB {
     editable?: boolean;
   }) {
     const { subject, data, tags = [], editable = false } = params;
-    const response = await fetch(this.url, {
+    const response = await this.fetcher(this.url, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify({
@@ -49,21 +57,12 @@ export class GHDB {
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Create failed with ${response.status}`);
-    }
-
     const result = (await response.json()) as GHResponse;
-
     if (editable === false) {
-      const response = await fetch(`${this.url}/${result.number}/lock`, {
+      await this.fetcher(`${this.url}/${result.number}/lock`, {
         method: "PUT",
         headers: this.headers,
       });
-
-      if (!response.ok) {
-        throw new Error(`Lock failed with ${response.status}`);
-      }
     }
 
     return { id: result.number, ...data };
@@ -91,36 +90,26 @@ export class GHDB {
     const searchParams = url.searchParams;
     searchParams.append("title", subject);
 
-    if (tags) {
-      searchParams.append("labels", tags.toString());
-    }
+    const searchParamsMap = {
+      labels: tags,
+      per_page: perPage,
+      page,
+      sort,
+      direction,
+    } as const;
 
-    if (perPage) {
-      searchParams.append("per_page", perPage.toString());
-    }
-
-    if (page) {
-      searchParams.append("page", page.toString());
-    }
-
-    if (sort) {
-      searchParams.append("sort", sort);
-    }
-
-    if (direction) {
-      searchParams.append("direction", direction);
+    for (const [key, value] of Object.entries(searchParamsMap)) {
+      if (value !== undefined) {
+        searchParams.append(key, value.toString());
+      }
     }
 
     searchParams.append("creator", this.owner);
 
-    const response = await fetch(url, {
+    const response = await this.fetcher(url.toString(), {
       method: "GET",
       headers: this.headers,
     });
-
-    if (!response.ok) {
-      throw new Error(`Read all failed with ${response.status}`);
-    }
 
     const result = (await response.json()) as GHResponse[];
 
@@ -130,18 +119,14 @@ export class GHDB {
           return { id: r.number, ...JSON.parse(r.body) };
         } catch (e) {}
       })
-      .filter((r) => r) as T[];
+      .filter((r) => r !== undefined) as T[];
   }
 
   async readOne(id: number) {
-    const response = await fetch(`${this.url}/${id}}`, {
+    const response = await this.fetcher(`${this.url}/${id}`, {
       method: "GET",
       headers: this.headers,
     });
-
-    if (!response.ok) {
-      throw new Error(`Read one failed with ${response.status}`);
-    }
 
     const result = await response.json();
 
@@ -149,7 +134,7 @@ export class GHDB {
   }
 
   async update(id: number, data: Data) {
-    const response = await fetch(`${this.url}/${id}}`, {
+    const response = await this.fetcher(`${this.url}/${id}`, {
       method: "PATCH",
       headers: this.headers,
       body: JSON.stringify({
@@ -157,17 +142,13 @@ export class GHDB {
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Update failed with ${response.status}`);
-    }
-
     const result = await response.json();
 
     return { id, ...JSON.parse(result.body) };
   }
 
   async delete(id: number) {
-    const response = await fetch(`${this.url}/${id}`, {
+    await this.fetcher(`${this.url}/${id}`, {
       method: "PATCH",
       headers: this.headers,
       body: JSON.stringify({
@@ -177,9 +158,5 @@ export class GHDB {
         labels: [],
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Delete failed with ${response.status}`);
-    }
   }
 }
