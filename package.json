@@ -2,7 +2,6 @@
   "name": "@ga-ut/gh-db",
   "version": "0.0.1",
   "description": "A Simple Data Management Tool Based on GitHub Issues",
-  "private": "false",
   "homepage": "https://github.com/ga-ut/gh-db",
   "files": [
     "dist/",
